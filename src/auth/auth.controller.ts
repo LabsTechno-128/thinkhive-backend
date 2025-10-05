@@ -12,6 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import type { Response, Request } from 'express';
 import { User } from 'src/user/entities/user.entity';
 import { SignupDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -23,8 +24,15 @@ export class AuthController {
   }
 
   @Post('signup')
-  async signup(@Body() signupDto: SignupDto): Promise<string> {
+  async signup(
+    @Body() signupDto: SignupDto,
+  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
     return await this.authService.signup(signupDto);
+  }
+
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 
   @Get('google')
