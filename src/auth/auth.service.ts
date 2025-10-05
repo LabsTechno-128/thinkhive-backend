@@ -1,39 +1,53 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Auth } from './entities/auth.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { SocialUserDto } from './dto/social.user.dto';
 import { JwtService } from '@nestjs/jwt';
+import { SignupDto } from './dto/signup.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
-    @InjectRepository(Auth)
-    private readonly authRepository: Repository<Auth>,
     private jwtService: JwtService,
-  ) {}
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
-  }
+  ) { }
 
   findAll() {
-    return this.authRepository.find();
+    return this.userRepository.find();
   }
+  async signup(signupDto: SignupDto): Promise<string> {
+    const { email, phone, password } = signupDto;
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    // Check if email or phone already exists
+    if (email) {
+      const emailExists = await this.userRepository.findOne({
+        where: { email },
+      });
+      if (emailExists) throw new NotFoundException('Email already registered');
+    }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
+    if (phone) {
+      const phoneExists = await this.userRepository.findOne({
+        where: { phone },
+      });
+      if (phoneExists) throw new NotFoundException('Phone already registered');
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const user = await this.userRepository.save({
+      email,
+      password: hashedPassword,
+      phone,
+    });
+
+    const tokens = await this.generateTokens(user);
+
+    return tokens.accessToken;
   }
   // validate social auth user
   async validateSocialUser(socialUser: SocialUserDto): Promise<User> {

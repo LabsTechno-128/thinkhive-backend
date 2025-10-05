@@ -46,6 +46,9 @@ export class User {
   @Column({ unique: true, nullable: true })
   phone: string;
 
+  @Column({ nullable: true, select: false })
+  password: string;
+
   @Column({ default: false })
   availToSetPassword: boolean;
 
