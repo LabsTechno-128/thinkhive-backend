@@ -17,7 +17,7 @@ export class AuthService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   findAll() {
     return this.userRepository.find();
