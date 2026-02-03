@@ -7,6 +7,9 @@ import { CategoryModule } from './category/category.module';
 import dataSource from 'config/typeORM.config';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { ArticlesModule } from './articles/articles.module';
+import { EbooksModule } from './ebooks/ebooks.module';
+import { QuizModule } from './quiz/quiz.module';
+import { BannersModule } from './banners/banners.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { ArticlesModule } from './articles/articles.module';
     CategoryModule,
     AttachmentsModule,
     ArticlesModule,
+    EbooksModule,
+    QuizModule,
+    BannersModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

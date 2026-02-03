@@ -52,6 +52,15 @@ export class User {
   @Column({ default: false })
   availToSetPassword: boolean;
 
+  @Column({ default: true })
+  isActive: boolean;
+
+  @Column({ nullable: true })
+  bio: string;
+
+  @Column({ nullable: true })
+  location: string;
+
   @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user, {
     nullable: true,
     cascade: true,

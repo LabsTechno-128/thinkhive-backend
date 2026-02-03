@@ -1,10 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsBoolean,
-  IsUrl,
-} from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsBoolean } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString()
@@ -18,7 +12,6 @@ export class CreateCategoryDto {
   description?: string;
 
   @IsOptional()
-  @IsUrl({}, { message: 'image must be a valid URL' })
   image?: string;
 
   @IsOptional()

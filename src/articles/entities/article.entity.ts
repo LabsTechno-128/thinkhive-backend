@@ -12,6 +12,10 @@ export class Article {
   @Index()
   title: string;
 
+  // slug added 
+  @Column({ nullable: true })
+  slug: string;
+
   @Column({ nullable: true })
   subtitle: string;
 

@@ -13,9 +13,14 @@ async function bootstrap() {
       transform: true, // payload  make dto instance
     }),
   );
- 
+
   app.setGlobalPrefix('api/v1');
   console.log(`🚀 App running on http://localhost:${PORT}`);
+  app.enableCors({
+    // origin: 'http://localhost:3000',
+    origin: ['https://thinkhive.net', 'https://www.thinkhive.net'],
+    credentials: true,
+  });
   await app.listen(PORT);
 }
 

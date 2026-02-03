@@ -1,10 +1,10 @@
-import { 
-  Injectable, 
-  NotFoundException, 
-  BadRequestException, 
-  ConflictException, 
-  InternalServerErrorException, 
-  Logger 
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
+  Logger
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, Like, FindManyOptions } from 'typeorm';
@@ -62,7 +62,7 @@ export class BannersService {
   constructor(
     @InjectRepository(Banner)
     private bannersRepository: Repository<Banner>,
-  ) {}
+  ) { }
 
   /**
    * Create a new banner
@@ -78,18 +78,18 @@ export class BannersService {
         ...createBannerDto,
         isDeleted: false,
       });
-      
+
       const savedBanner = await this.bannersRepository.save(banner);
       this.logger.log(`Banner created with ID: ${savedBanner.id}`);
-      
+
       return savedBanner;
     } catch (error) {
       this.logger.error(`Error creating banner: ${error.message}`, error.stack);
-      
+
       if (error.code === '23505') { // Unique constraint violation
         throw new ConflictException('Banner with similar details already exists');
       }
-      
+
       throw new InternalServerErrorException('Failed to create banner');
     }
   }
@@ -106,10 +106,10 @@ export class BannersService {
   }: FindAllBannersOptions = {}): Promise<PaginatedBannersDto> {
     try {
       this.logger.log(`Fetching banners - Page: ${page}, Limit: ${limit}`);
-      
+
       const skip = (page - 1) * limit;
       const where: any = {};
-      
+
       if (search) {
         where.title = Like(`%${search}%`);
       }
@@ -123,7 +123,7 @@ export class BannersService {
       });
 
       const totalPages = Math.ceil(total / limit);
-      
+
       const result = new PaginatedBannersDto();
       result.data = data;
       result.total = total;
@@ -132,7 +132,7 @@ export class BannersService {
       result.totalPages = totalPages;
       result.hasNextPage = page < totalPages;
       result.hasPreviousPage = page > 1;
-      
+
       return result;
     } catch (error) {
       this.logger.error(`Error fetching banners: ${error.message}`, error.stack);
@@ -150,12 +150,12 @@ export class BannersService {
   async findOne(id: string, withDeleted = false): Promise<Banner> {
     try {
       this.logger.log(`Finding banner with ID: ${id}`);
-      
+
       const where: FindOptionsWhere<Banner> = { id };
       if (!withDeleted) {
         where.isDeleted = false;
       }
-      
+
       const banner = await this.bannersRepository.findOne({
         where,
         withDeleted,
@@ -185,21 +185,21 @@ export class BannersService {
   async update(id: string, updateBannerDto: UpdateBannerDto): Promise<Banner> {
     try {
       this.logger.log(`Updating banner with ID: ${id}`);
-      
+
       const banner = await this.bannersRepository.preload({
         id,
         ...updateBannerDto,
       });
-      
+
       if (!banner) {
         throw new NotFoundException(`Banner with ID ${id} not found`);
       }
-      
+
       banner.updatedAt = new Date();
-      
+
       const savedBanner = await this.bannersRepository.save(banner);
       this.logger.log(`Banner with ID ${id} updated successfully`);
-      
+
       return savedBanner;
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
@@ -217,13 +217,13 @@ export class BannersService {
   async remove(id: string): Promise<void> {
     try {
       this.logger.log(`Soft deleting banner with ID: ${id}`);
-      
+
       const result = await this.bannersRepository.softDelete(id);
-      
+
       if (result.affected === 0) {
         throw new NotFoundException(`Banner with ID ${id} not found`);
       }
-      
+
       this.logger.log(`Banner with ID ${id} soft deleted successfully`);
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
@@ -244,15 +244,15 @@ export class BannersService {
 
     try {
       this.logger.log(`Uploading file: ${file.originalname}`);
-      
+
       // In a real application, you would upload the file to a storage service here
       // For example, using AWS S3, Google Cloud Storage, or a similar service
       // This is a mock implementation that returns a placeholder URL
-      
+
       const imageUrl = `https://example.com/uploads/${Date.now()}-${file.originalname}`;
-      
+
       this.logger.log(`File uploaded successfully: ${imageUrl}`);
-      
+
       return { url: imageUrl };
     } catch (error) {
       this.logger.error(`Error uploading file: ${error.message}`, error.stack);
@@ -269,16 +269,16 @@ export class BannersService {
   async restore(id: string): Promise<Banner> {
     try {
       this.logger.log(`Restoring banner with ID: ${id}`);
-      
+
       const result = await this.bannersRepository.restore(id);
-      
+
       if (result.affected === 0) {
         throw new NotFoundException(`Banner with ID ${id} not found or already active`);
       }
-      
+
       const restoredBanner = await this.findOne(id, true);
       this.logger.log(`Banner with ID ${id} restored successfully`);
-      
+
       return restoredBanner;
     } catch (error) {
       if (error instanceof NotFoundException) throw error;

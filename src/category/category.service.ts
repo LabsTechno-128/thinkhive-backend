@@ -25,27 +25,30 @@ export class CategoryService {
     return this.categoryRepo.save(category);
   }
 
-  findAll(): Promise<Category[]> {
-    return this.categoryRepo.find({ relations: ['parent', 'children'] });
+  async findAll(): Promise<{ data: Category[]; message: string }> {
+    return {
+      data: await this.categoryRepo.find({ relations: ['parent', 'children'] }),
+      message: 'Categories retrieved successfully',
+    };
   }
 
-  async findOne(id: string): Promise<Category> {
+  async findOne(id: string): Promise<{ data: Category; message: string }> {
     const category = await this.categoryRepo.findOne({
       where: { id },
       relations: ['parent', 'children'],
     });
     if (!category) throw new NotFoundException('Category not found');
-    return category;
+    return { data: category, message: 'Category found' };
   }
 
   async update(id: string, dto: UpdateCategoryDto): Promise<Category> {
     const category = await this.findOne(id);
     Object.assign(category, dto);
-    return this.categoryRepo.save(category);
+    return this.categoryRepo.save(category.data);
   }
 
   async remove(id: string): Promise<void> {
     const category = await this.findOne(id);
-    await this.categoryRepo.remove(category);
+    await this.categoryRepo.remove(category.data);
   }
 }

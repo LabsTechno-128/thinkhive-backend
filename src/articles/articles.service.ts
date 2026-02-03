@@ -41,7 +41,7 @@ export class ArticlesService {
     search,
     category,
     author,
-    isPublished,
+    // isPublished,
   }: FindAllOptions = {}): Promise<PaginatedArticlesDto> {
     const skip = (page - 1) * limit;
     const where: any = {};
@@ -58,9 +58,9 @@ export class ArticlesService {
       where.author = author;
     }
 
-    if (isPublished !== undefined) {
-      where.isPublished = isPublished;
-    }
+    // if (isPublished !== undefined) {
+    //   where.isPublished = isPublished;
+    // }
 
     const [items, total] = await this.articlesRepository.findAndCount({
       where,

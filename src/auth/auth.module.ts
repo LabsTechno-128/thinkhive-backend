@@ -7,6 +7,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from 'utility/strategies/google.strategy';
 import { User } from 'src/user/entities/user.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
+
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -20,17 +23,17 @@ import { User } from 'src/user/entities/user.entity';
         return {
           secret,
           signOptions: {
-            expiresIn: configService.get<string>('ACCESS_TOKEN_EXPIRY'),
+            expiresIn: '1h',
           },
         };
       },
       inject: [ConfigService], // Inject ConfigService
     }),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, RefreshToken]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy],
+  providers: [AuthService, GoogleStrategy, JwtStrategy],
 })
-export class AuthModule {}
+export class AuthModule { }
 
 //

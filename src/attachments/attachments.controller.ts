@@ -1,6 +1,22 @@
-import { Controller, Post, UploadedFile, UseInterceptors, Body, Get, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  Body,
+  Get,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiConsumes,
+  ApiBody,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AttachmentsService } from './attachments.service';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { Attachment } from './entities/attachment.entity';
@@ -10,7 +26,7 @@ import type { Express } from 'express';
 @ApiTags('attachments')
 @Controller('attachments')
 export class AttachmentsController {
-  constructor(private readonly attachmentsService: AttachmentsService) {}
+  constructor(private readonly attachmentsService: AttachmentsService) { }
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -19,7 +35,11 @@ export class AttachmentsController {
     description: 'File to upload',
     type: UploadFileDto,
   })
-  @ApiResponse({ status: 201, description: 'File uploaded successfully', type: Attachment })
+  @ApiResponse({
+    status: 201,
+    description: 'File uploaded successfully',
+    type: Attachment,
+  })
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('folder') folder?: string,
@@ -28,7 +48,11 @@ export class AttachmentsController {
   }
 
   @Get(':id')
-  @ApiResponse({ status: 200, description: 'Returns the attachment', type: Attachment })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the attachment',
+    type: Attachment,
+  })
   @ApiResponse({ status: 404, description: 'Attachment not found' })
   async getFile(@Param('id') id: string): Promise<Attachment> {
     const attachment = await this.attachmentsService.findById(id);

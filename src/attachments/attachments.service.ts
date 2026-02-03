@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v2 as cloudinary } from 'cloudinary';
@@ -10,16 +10,24 @@ export class AttachmentsService {
   constructor(
     @InjectRepository(Attachment)
     private attachmentsRepository: Repository<Attachment>,
-  ) {}
+  ) { }
 
-  async uploadFile(file: Express.Multer.File, folder?: string): Promise<Attachment> {
+  async uploadFile(
+    file: Express.Multer.File,
+    folder?: string,
+  ): Promise<Attachment> {
+    console.log(
+      'Received file for upload:',
+      file ? file.originalname : 'No file',
+      file,
+    );
     if (!file) {
-      throw new Error('No file provided');
+      throw new NotFoundException('No file provided');
     }
 
     try {
       console.log('Uploading file:', file.originalname);
-      
+
       const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
@@ -47,11 +55,15 @@ export class AttachmentsService {
       attachment.width = result.width;
       attachment.height = result.height;
       attachment.bytes = result.bytes;
-      
+
       // Determine file type
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(result.format)) {
+      if (
+        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(result.format)
+      ) {
         attachment.type = 'image';
-      } else if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'].includes(result.format)) {
+      } else if (
+        ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'].includes(result.format)
+      ) {
         attachment.type = 'document';
       } else if (['mp4', 'webm', 'mov', 'avi'].includes(result.format)) {
         attachment.type = 'video';

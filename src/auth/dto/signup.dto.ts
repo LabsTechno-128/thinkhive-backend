@@ -32,6 +32,10 @@ export class SignupDto {
   @IsString({ message: 'Phone must be a string' })
   phone?: string;
 
+  @IsString({ message: 'Name must be a string' })
+  @IsOptional()
+  name?: string;
+
   @IsString({ message: 'Password is required' })
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
   password: string;

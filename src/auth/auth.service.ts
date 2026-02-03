@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -11,37 +12,38 @@ import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/signup.dto';
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
+import { RefreshToken } from './entities/refresh-token.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(RefreshToken)
+    private refreshTokenRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
-  findAll() {
-    return this.userRepository.find();
-  }
   async signup(signupDto: SignupDto): Promise<{
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
+    user: Partial<User>;
   }> {
-    const { email, phone, password } = signupDto;
+    const { name, email, phone, password } = signupDto;
 
     // Check if email or phone already exists
     if (email) {
       const emailExists = await this.userRepository.findOne({
         where: { email },
       });
-      if (emailExists) throw new NotFoundException('Email already registered');
+      if (emailExists) throw new BadRequestException('Email already registered');
     }
 
     if (phone) {
       const phoneExists = await this.userRepository.findOne({
         where: { phone },
       });
-      if (phoneExists) throw new NotFoundException('Phone already registered');
+      if (phoneExists) throw new BadRequestException('Phone already registered');
     }
 
     // Hash password
@@ -49,6 +51,7 @@ export class AuthService {
 
     // Create new user
     const user = await this.userRepository.save({
+      name,
       email,
       password: hashedPassword,
       phone,
@@ -56,33 +59,74 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user);
 
-    return tokens;
+    return { ...tokens, user };
   }
 
-  async login(
-    loginDto: LoginDto,
-  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+  async login(loginDto: LoginDto): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    user: Partial<User>;
+  }> {
     const { email, phone, password } = loginDto;
 
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .addSelect('user.password') // এখানে password select করছি
+      .addSelect('user.password')
       .where(email ? 'user.email = :email' : 'user.phone = :phone', {
         email,
         phone,
       })
       .getOne();
+
     if (!user) throw new NotFoundException('User not found');
+    if (!user.isActive) {
+      throw new UnauthorizedException('Your account is inactive');
+    }
     if (!user.password) {
       throw new UnauthorizedException('Please login using social login');
     }
-    if (!user.password) {
-      throw new UnauthorizedException('Password not set for this user');
-    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+
+    // Remove password from response
+    (user as any).password = undefined;
+
+    return { ...tokens, user };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken);
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
+
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+
+      // Check if token exists in DB and is not revoked
+      const storedToken = await this.refreshTokenRepository.findOne({
+        where: { token: refreshToken, revoked: false },
+      });
+
+      if (!storedToken) {
+        throw new UnauthorizedException('Invalid or revoked refresh token');
+      }
+
+      // Revoke old token
+      storedToken.revoked = true;
+      await this.refreshTokenRepository.save(storedToken);
+
+      // Generate new tokens
+      return this.generateTokens(user);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   // validate social auth user
@@ -124,6 +168,7 @@ export class AuthService {
       throw error;
     }
   }
+
   // token create
   async generateTokens(user: User) {
     const payload = {
@@ -133,13 +178,22 @@ export class AuthService {
       roles: user.roles,
     };
 
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: '1h',
+    });
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      expiresIn: '7d',
+    });
+
+    // Store refresh token in DB
+    await this.refreshTokenRepository.save({
+      token: refreshToken,
+      userId: user.id,
+    });
+
     return {
-      accessToken: await this.jwtService.signAsync(payload, {
-        expiresIn: '1h',
-      }),
-      refreshToken: await this.jwtService.signAsync(payload, {
-        expiresIn: '7d',
-      }),
+      accessToken,
+      refreshToken,
       expiresIn: 60 * 60, // seconds in 1 hour
     };
   }

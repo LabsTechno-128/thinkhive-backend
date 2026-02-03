@@ -16,23 +16,29 @@ import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Get('profile')
+  @UseGuards(AuthGuard('jwt'))
+  getProfile(@Req() req: Request) {
+    return req.user;
   }
 
   @Post('signup')
   async signup(
     @Body() signupDto: SignupDto,
-  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+  ) {
     return await this.authService.signup(signupDto);
   }
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('refresh-token')
+  async refreshTokens(@Body('refreshToken') refreshToken: string) {
+    return this.authService.refreshTokens(refreshToken);
   }
 
   @Get('google')
